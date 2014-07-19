@@ -301,4 +301,29 @@ sub get_connection_status {
 }
 
 
+=method get_all_freeplugs
+
+Return a reference to an array containing information about all the available
+freeplugs. Each array element is a hash with the fields described at
+L<http://dev.freebox.fr/sdk/os/freeplug/#freeplug-object>
+
+=cut
+
+sub get_all_freeplugs {
+    my $self = shift;
+
+    my $res = $self->_api_request(
+                'Failed to get freeplugs list',
+                'GET',
+                'freeplug/'
+            );
+
+    my $fps = [];
+    foreach my $fp (@{$res->{result}[0]{members}}) {
+        push @$fps, $fp;
+    }
+
+    return $fps
+}
+
 __PACKAGE__->meta->make_immutable();
