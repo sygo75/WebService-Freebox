@@ -280,4 +280,25 @@ sub get_system_config {
     return $res->{result}
 }
 
+
+=method get_connection_status
+
+Return the connection status as a hash with the fields described at
+L<http://dev.freebox.fr/sdk/os/connection/#connection-status>
+
+=cut
+
+sub get_connection_status {
+    my $self = shift;
+
+    my $res = $self->_api_request(
+                'Getting connection status failed',
+                'GET',
+                'connection/'
+            );
+
+    return $res->{result}
+}
+
+
 __PACKAGE__->meta->make_immutable();
