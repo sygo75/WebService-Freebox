@@ -1,0 +1,44 @@
+#!/usr/bin/env perl
+
+# PODNAME: freebox-authorize
+#
+# ABSTRACT: Helper script to obtain Freebox app authorization token.
+
+=head1 SYNOPSIS
+
+freebox-authorize <app-id> <app-name> <app-version> <device>
+
+For example:
+
+    freebox-authorize org.cpan.freebox.test "Test Freebox app" 1.0 "My computer"
+
+All parameters are required.
+
+
+=head1 DESCRIPTION
+
+The script uses L<WebService::Freebox> to request authorization to use the
+Freebox API for the application with the given name and version from the
+specified device.
+
+=cut
+
+use strict;
+use warnings;
+
+use WebService::Freebox;
+
+if (@ARGV != 4) {
+    die "Usage: $0 <app-id> <app-name> <app-version> <device>\n";
+}
+
+my $fb = WebService::Freebox->new(app_id => $ARGV[0], app_version => $ARGV[2]);
+
+$|++;
+print "Requesting authorization, please grant it using Freebox keys.\n";
+
+my $app_token = $fb->authorize($ARGV[1], $ARGV[3]);
+
+print qq{Successfully obtained app token "$app_token"\n};
+
+exit 0
