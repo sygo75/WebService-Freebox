@@ -32,18 +32,19 @@ C<WebService::Freebox> object needs to be created:
 Notice that the app token must be kept secret as it is sufficient to
 authenticate with the Freebox.
 
-Additionally, a session must be opened before using the API. The session token
-is ephemeral, unlike the app token, but still needs to be saved and reused if
-possible to avoid reopening the session every time unnecessarily:
+Additionally, a session must be opened by calling L<login()> method before
+using any other API methods. The session token is ephemeral, unlike the app
+token, but still needs to be saved and reused if possible to avoid reopening
+the session every time unnecessarily:
 
     # If no previous session token:
-    my $session_token = $fb->start_session();
+    my $session_token = $fb->login();
 
     # Reuse the previous session token if possible (if it doesn't work, a new
     # session is opened):
-    $fb->start_session($session_token);
+    $fb->login($session_token);
 
-Finally, once the session is opened, the API can be used:
+Finally, once the session is opened, the API can be used in the expected way:
 
     my $sc = $fb->get_system_config();
     say "Freebox is up for $sc->{uptime}."
@@ -52,7 +53,6 @@ Finally, once the session is opened, the API can be used:
 
 use Mouse;
 
-use Digest::SHA qw(hmac_sha1_hex);
 use JSON;
 use REST::Client;
 
@@ -128,7 +128,7 @@ C<app_token> may be also specified here or obtained from L<authorize()> later
                                       app_token=> '...64 alphanumeric characters ...');
 
 The validity of the token is not checked here but using an invalid token will
-result in a failure in C<start_session()> later.
+result in a failure in C<login()> later.
 
 =cut
 
@@ -185,6 +185,56 @@ sub authorize {
         unless $res->{result}{status} eq 'granted';
 
     return $app_token
+}
+
+
+=method login
+
+A session must be started by logging in using this method before calling any
+methods other than L<authorize()>.
+
+Returns the session token which may be saved and reused by passing it to the
+next call to this method during some (relatively short) time until it times
+out.
+
+=cut
+
+sub login {
+    my ($self, $session_token) = @_;
+
+    if (defined $session_token) {
+        $self->_client->addHeader('X-Fbx-App-Auth', $session_token);
+    }
+
+    my $res = $self->_api_request(
+                'Checking logged in status failed',
+                'GET',
+                'login/'
+            );
+
+    if (!$res->{result}{logged_in}) {
+        use Digest::SHA qw(hmac_sha1_hex);
+
+        my $challenge = $res->{result}{challenge};
+        my $password = hmac_sha1_hex($challenge, $self->app_token);
+
+        $res = $self->_api_request(
+                    'Logging in failed',
+                    'POST',
+                    "login/session/",
+                    encode_json({
+                        app_id => $self->app_id,
+                        app_version => $self->app_version,
+                        password => $password,
+                    })
+                );
+
+        $session_token = $res->{result}{session_token};
+
+        $self->_client->addHeader('X-Fbx-App-Auth', $session_token);
+    }
+
+    return $session_token;
 }
 
 __PACKAGE__->meta->make_immutable();
