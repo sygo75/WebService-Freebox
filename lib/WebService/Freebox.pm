@@ -237,4 +237,47 @@ sub login {
     return $session_token;
 }
 
+
+=method get_system_config
+
+Return information about the Freebox as a hash with the following keys:
+
+=over 4
+
+=item C<firmware_version> Firmware version.
+
+=item C<mac> MAC address.
+
+=item C<serial> Serial number.
+
+=item C<uptime> Uptime as a user-readable string.
+
+=item C<uptime_val> Uptime in seconds.
+
+=item C<board_name> Hardware revision.
+
+=item C<temp_cpum> CPU (Marvell) temperature in degrees Celsius.
+
+=item C<temp_sw> Switch temperature in degrees Celsius.
+
+=item C<temp_cpub> CPU (Broadcom) temperature in degrees Celsius.
+
+=item C<fan_rpm> Fan RPM.
+
+=back
+
+=cut
+
+sub get_system_config {
+    my $self = shift;
+
+    my $res = $self->_api_request(
+            'Getting system configuration failed',
+            'GET',
+            'system/'
+        );
+
+    return $res->{result}
+}
+
 __PACKAGE__->meta->make_immutable();
